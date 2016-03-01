@@ -162,48 +162,75 @@
 
 
 
-;;; -=-=--=-=-=-=-=- Evaluation Station -=-=-=-=-=-
+;~~~~~~~~~~~~~~~~~~~~~~~~ Peter's Work Starts Here ~~~~~~~~~~~~~~~~~~~~~~~~
+
+;~~~~~~~~~~~~~~~~~~ Mutation ~~~~~~~~~~~~~~~~~~
+
+(defn cull-the-weak
+  ;picks the best best of the group for breeding, its simple eugenics.
+  [best population]
+    (if (= (count population) 0)
+      best
+      (cull-the-weak (if (> (:score best) (:score (first population)))
+                   best (first population)) (rest population))))
 
 
-;!!!!!!!!!!!!!!!!!!!!!THESE ARE NO LONGER CORRECT CALLS!!!!!!!!!!!!!!!
-;(hill-climb-racing knapPI_11_20_1000_1 remove-then-random-replace 10000)
-;(hill-random-restarts knapPI_11_20_1000_1 10000 10)
+(defn remove-failures
+  [population child-count]
+    (take success-rate (sort-by :score > population)))
 
-;; -=-=-=- Testing our own various algorithms. -=-=-=-=-=-
-;*(hill-climb-racing remove-then-random-replace knapPI_11_20_1000_4  10000)
-;(hill-climb-racing knapPI_13_20_1000_4 remove-then-random-replace 10000)
-;(hill-climb-racing knapPI_16_20_1000_4 remove-then-random-replace 10000)
-;(hill-climb-racing knapPI_11_1000_1000_4 remove-then-random-replace 10000)
-;(hill-climb-racing knapPI_13_1000_1000_4 remove-then-random-replace 10000)
-;(hill-climb-racing knapPI_16_1000_1000_4 remove-then-random-replace 10000)
 
-;(random-search knapPI_11_20_1000_4 10000)
-;(random-search knapPI_13_20_1000_4 10000)
-;(random-search knapPI_16_20_1000_4 10000)
-;(random-search knapPI_11_1000_1000_4 10000)
-;(random-search knapPI_13_1000_1000_4 10000)
-;(random-search knapPI_16_1000_1000_4 10000)
-
-;*(hill-random-restarts knapPI_11_20_1000_4 5000)
-;(hill-random-restarts knapPI_13_20_1000_4 5000 10)
-;(hill-random-restarts knapPI_16_20_1000_4 5000 10)
-;(hill-random-restarts knapPI_11_1000_1000_4 5000 10)
-;(hill-random-restarts knapPI_13_1000_1000_4 5000 10)
-;(hill-random-restarts knapPI_16_1000_1000_4 5000 10)
-
-;; -=-=-=--=- Testing against Molly's -=-=-=-=-=-=-
-;(hill-climb-racing knapPI_11_20_1000_1 remove-then-random-replace 10000)
-;(hill-climb-racing knapPI_13_20_1000_1 remove-then-random-replace 10000)
-;(hill-climb-racing knapPI_16_20_1000_1 remove-then-random-replace 10000)
-
-;(hill-random-restarts knapPI_11_20_1000_1 5000 10)
-;(hill-random-restarts knapPI_13_20_1000_1 5000 10)
-;(hill-random-restarts knapPI_16_20_1000_1 5000 10)
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!END!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+(defn babby-maker
+  [population child-count mutations]
+  (flatten (for [x population] (repeatedly child-count #(mutations x)))))
 
 
 
 
+
+(defn mutate
+  "Swaps one bit, changes a random choice."
+  [choices]
+  (def choicesVector (vec choices))
+  (loop [rand #(rand-int (count choicesVector))]
+
+    (if (= (get choicesVector rand) 1)
+      ((reverse (into '() (assoc choicesVector rand 0))) ;if the choice is deselected, it selects it.
+      (recur (#(rand-int (count choicesVector)))))
+
+      ((reverse (into '() (assoc choicesVector rand 1))) ;if the choice is selected, it deselects it.
+      (recur (#(rand-int (count choicesVector)))))
+      )
+  ))
+
+
+(defn mutator
+  "Takes an answer. If the answer is over capacity, removes items until it is not. If it is not, removes a random and add a random."
+  [answer]
+  (if (> (answer :total-weight) (:capacity (:instance answer)))
+    (mutate (reconstruct-answer (answer :instance) (mutate (answer :choices))))
+
+    (reconstruct-answer (answer :instance)
+                        (mutate
+                         (mutate (answer :choices))))
+    )
+  )
+
+
+(defn mutator
+  [choices]
+  (def choicesVector (vec choices))
+  (loop [rand #(rand-int (count choicesVector))]
+
+    (if (= (get choicesVector rand) 1)
+
+
+
+)))
+
+(defn mutate
+  [pos choices]
+  (
 
 
 
