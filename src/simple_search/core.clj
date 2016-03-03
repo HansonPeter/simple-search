@@ -160,77 +160,79 @@
   )
 
 
-
-
-;~~~~~~~~~~~~~~~~~~~~~~~~ Peter's Work Starts Here ~~~~~~~~~~~~~~~~~~~~~~~~
-
 ;~~~~~~~~~~~~~~~~~~ Mutation ~~~~~~~~~~~~~~~~~~
 
-(defn cull-the-weak
-  ;picks the best best of the group for breeding, its simple eugenics.
-  [best population]
-    (if (= (count population) 0)
-      best
-      (cull-the-weak (if (> (:score best) (:score (first population)))
-                   best (first population)) (rest population))))
+(defn find-best
+  [population]
+  (let [return (sort-by :score > population)] return))
 
 
-(defn remove-failures
-  [population child-count]
-    (take success-rate (sort-by :score > population)))
+(defn selection
+  [size population]
+  (take size (repeatedly (fn select[] (first (find-best (take 4 (repeatedly #(rand-nth population)))))))))
+
+
+(defn mutate-choices
+  [choices]
+  (let [mutation-rate (/ 1 (count choices))]
+    (map #(if (< (rand) mutation-rate) (- 1 %) %) choices)))
+
+
+(defn mutate-answer
+  [answer]
+  (make-answer (:instance answer)
+               (mutate-choices (:choices answer))))
 
 
 (defn babby-maker
-  [population child-count mutations]
-  (flatten (for [x population] (repeatedly child-count #(mutations x)))))
+  [instance size mutator population]
+  (let [all (concat (map #(add-score penalized-score %) (map (partial make-answer instance) (crossover population size mutator)))
+                    (map #(add-score penalized-score %) (map (partial make-answer instance) population)))
+            best (tournament-selection 4 all)] (map :choices best)))
+
+
+(defn crossover-search
+  [mutator instance max-tries size]
+  (let [population (map :choices (take size (repeatedly #(random-answer instance))))]
+  (first (find-best (map #(add-score penalized-score %) (map (partial make-answer instance) (last (take max-tries (iterate (partial babby-maker instance size mutator) population)))))))))
+
+
+(defn mutation-function
+  [mutator scorer instance max-tries size]
+  (loop [current-best (add-score scorer (random-answer instance))
+         num-tries 1]
+    (let [new-answer (add-score scorer (mutator current-best))]
+      (if (>= num-tries max-tries)
+        current-best
+        (if (> (:score new-answer)
+               (:score current-best))
+          (recur new-answer (inc num-tries))
+          (recur current-best (inc num-tries)))))))
+
+
+(defn two-point-crossover
+  [parent1 parent2]
+  (let [point1 (rand-int (count parent1))
+        point2 (rand-int (count parent1))
+        left (if (<= point1 point2) point1 point2)
+        right (if (>= point1 point2) point1 point2)
+        ]
+    {:child1 (mutate-choices (concat (subvec (vec parent1) 0 left) (subvec (vec parent2) left right) (subvec (vec parent1) right (count (vec parent1)))))
+     :child2 (mutate-choices (concat (subvec (vec parent2) 0 left) (subvec (vec parent1) left right) (subvec (vec parent2) right (count (vec parent2)))))}))
+
+
+(defn uniform-crossover
+  [parent1 parent2]
+  (let [flips (take (count parent1) (repeatedly (count parent1) #(rand-int 5)))]
+  {:child1 (mutate-choices (map #(if (= %3 0) %2 %1) parent1 parent2 flips)) :child2 (mutate-choices (map #(if (= %3 0) %1 %2) parent1 parent2 flips))}))
+
+
+;~~~~~~~~~~~~~ Evaluation/Testing ~~~~~~~~~~~~~
 
 
 
 
 
-(defn mutate
-  "Swaps one bit, changes a random choice."
-  [choices]
-  (def choicesVector (vec choices))
-  (loop [rand #(rand-int (count choicesVector))]
-
-    (if (= (get choicesVector rand) 1)
-      ((reverse (into '() (assoc choicesVector rand 0))) ;if the choice is deselected, it selects it.
-      (recur (#(rand-int (count choicesVector)))))
-
-      ((reverse (into '() (assoc choicesVector rand 1))) ;if the choice is selected, it deselects it.
-      (recur (#(rand-int (count choicesVector)))))
-      )
-  ))
-
-
-(defn mutator
-  "Takes an answer. If the answer is over capacity, removes items until it is not. If it is not, removes a random and add a random."
-  [answer]
-  (if (> (answer :total-weight) (:capacity (:instance answer)))
-    (mutate (reconstruct-answer (answer :instance) (mutate (answer :choices))))
-
-    (reconstruct-answer (answer :instance)
-                        (mutate
-                         (mutate (answer :choices))))
-    )
-  )
-
-
-(defn mutator
-  [choices]
-  (def choicesVector (vec choices))
-  (loop [rand #(rand-int (count choicesVector))]
-
-    (if (= (get choicesVector rand) 1)
-
-
-
-)))
-
-(defn mutate
-  [pos choices]
-  (
 
 
 
