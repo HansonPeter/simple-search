@@ -22,12 +22,7 @@
        (filter #(= 1 (second %))
                (map vector items choices))))
 
-(defn make-answer
-  [instance choices]
-  (let [included (included-items (:items instance) choices)]
-    (->Answer instance choices
-              (reduce + (map :weight included))
-              (reduce + (map :value included)))))
+
 
 (defn random-answer
   "Construct a random answer for the given instance of the
@@ -218,21 +213,7 @@
           (recur current-best (inc num-tries)))))))
 
 
-(defn two-point-crossover
-  [parent1 parent2]
-  (let [point1 (rand-int (count parent1))
-        point2 (rand-int (count parent1))
-        left (if (<= point1 point2) point1 point2)
-        right (if (>= point1 point2) point1 point2)
-        ]
-    {:child1 (mutate-choices (concat (subvec (vec parent1) 0 left) (subvec (vec parent2) left right) (subvec (vec parent1) right (count (vec parent1)))))
-     :child2 (mutate-choices (concat (subvec (vec parent2) 0 left) (subvec (vec parent1) left right) (subvec (vec parent2) right (count (vec parent2)))))}))
 
-
-(defn uniform-crossover
-  [parent1 parent2]
-  (let [flips (take (count parent1) (repeatedly (count parent1) #(rand-int 5)))]
-  {:child1 (mutate-choices (map #(if (= %3 0) %2 %1) parent1 parent2 flips)) :child2 (mutate-choices (map #(if (= %3 0) %1 %2) parent1 parent2 flips))}))
 
 
 ;~~~~~~~~~~~~~ Evaluation/Testing ~~~~~~~~~~~~~
